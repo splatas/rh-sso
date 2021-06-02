@@ -1,0 +1,35 @@
+---
+- name: Install and run RH-SSO 7.4
+  hosts: localhost
+  
+  vars:
+    - db_host: localhost
+    - db_port: 1521
+    - db_schema: orcl 
+    - db_user: hr
+    - db_password: oracle
+
+    - packages_to_install: [unzip, java-11-openjdk-devel]
+    #- packages_to_install:  [gzip, java-1.11.0-openjdk-devel u oracle-java8-installer]
+
+    - rhsso_zipfile: ./files/rh-sso-7.4.zip
+
+  tasks:
+    - name: Instalacion de paquetes
+       command: "brew install java-11-openjdk-devel"
+
+    - name: Instalacion de paquetes
+      package:
+        name: "{{ packages_to_install }}"
+        state: present
+      register: packages_result
+      retries: 2
+      until: packages_result is success
+    
+    - name: Instalacion de los archivos de RH-SSO "{{ rhsso_zipfile }}"
+      unarchive:
+        src: "{{ rhsso_zipfile }}"
+        dest: .
+
+    - name: Run RH-SSO
+      command: "./rh-sso-7.4/bin/standalone.sh -c standalone-ha.xml -DUSER={{db_user}} -DPASSWORD={{db_password}} -DHOST={{db_host}} -DPORT:{{db_port}} -DSCHEMA={{db_schema}}"
